@@ -19,6 +19,6 @@ module.exports = (req, res, next) => {
             res.status(500).json(error);
         });
     } else {
-        res.status(400).json({ message: 'Please provide credentials'});
+        res.status(400).json({ message: 'You shall not pass!'});
     }
 }
