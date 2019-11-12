@@ -1,12 +1,35 @@
+const express = require('express');
 const router = require('express').Router();
+const bcrypt = require('bcryptjs');
+const session = require('express-session');
+const KnexSessionsStorage = require('connect-session-knex')(session);
 
 const authRouter = require('../auth/auth-router.js');
 const usersRouter = require('../users/users-router.js');
 const restrictedRouter = require('../restricted/restricted-router.js');
+const knexConnection = require('../database/dbConfig.js');
 
 const Users = require('../users/users-helpers.js');
+const server = express();
 
-const bcrypt = require('bcryptjs');
+const sessionConfiguration = {
+    name: 'monkey',
+    secret: process.env.COOKIE_SECRET || 'Keep it secret, keep it safe!',
+    cookie: {
+        maxAge: 1000 * 60 * 60,
+        secure: process.env.NODE_ENV === 'development' ? false : true,
+        httpOnly: true,
+    },
+    resave: false,
+    saveUninitialized: true, 
+    store: new KnexSessionsStorage({
+        knex: knexConnection,
+        clearInterval: 1000 * 60 * 10,
+        tablename: 'user_sessions',
+        sidfieldname: 'id',
+        createtable: true,
+    }),
+}
 
 function gateKeeper(req, res, next) {
     let { username, password} = req.headers;
@@ -29,12 +52,14 @@ function gateKeeper(req, res, next) {
     }
 }
 
+server.use(session(sessionConfiguration));
+
 router.use('/auth', authRouter);
 router.use('/users', usersRouter);
 router.use('/restricted', gateKeeper, restrictedRouter)
 
 router.get('/', (req, res) => {
-    res.json({ api: "It's Alive"});
+    res.json({ api: "It's Alive", session: req.session});
 });
 
 router.post('/hash', (req, res) => {
