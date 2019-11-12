@@ -1,35 +1,12 @@
-const express = require('express');
 const router = require('express').Router();
-const bcrypt = require('bcryptjs');
-const session = require('express-session');
-const KnexSessionsStorage = require('connect-session-knex')(session);
 
 const authRouter = require('../auth/auth-router.js');
 const usersRouter = require('../users/users-router.js');
 const restrictedRouter = require('../restricted/restricted-router.js');
-const knexConnection = require('../database/dbConfig.js');
 
 const Users = require('../users/users-helpers.js');
-const server = express();
 
-const sessionConfiguration = {
-    name: 'monkey',
-    secret: process.env.COOKIE_SECRET || 'Keep it secret, keep it safe!',
-    cookie: {
-        maxAge: 1000 * 60 * 60,
-        secure: process.env.NODE_ENV === 'development' ? false : true,
-        httpOnly: true,
-    },
-    resave: false,
-    saveUninitialized: true, 
-    store: new KnexSessionsStorage({
-        knex: knexConnection,
-        clearInterval: 1000 * 60 * 10,
-        tablename: 'user_sessions',
-        sidfieldname: 'id',
-        createtable: true,
-    }),
-}
+const bcrypt = require('bcryptjs');
 
 function gateKeeper(req, res, next) {
     let { username, password} = req.headers;
@@ -52,14 +29,12 @@ function gateKeeper(req, res, next) {
     }
 }
 
-server.use(session(sessionConfiguration));
-
 router.use('/auth', authRouter);
 router.use('/users', usersRouter);
 router.use('/restricted', gateKeeper, restrictedRouter)
 
 router.get('/', (req, res) => {
-    res.json({ api: "It's Alive", session: req.session});
+    res.json({ api: "It's Alive"});
 });
 
 router.post('/hash', (req, res) => {
@@ -68,5 +43,14 @@ router.post('/hash', (req, res) => {
 
     res.status(200).json({ password, hash });
 });
+
+router.get('/logout', (req, res) => {
+    if(req.session) {
+        req.session.destroy();
+        res.status(200).json({ message: 'Bye Felicia!'})
+    } else {
+        res.status(200).json({ message: 'Thanks for playing!'})
+    }
+})
 
 module.exports = router;

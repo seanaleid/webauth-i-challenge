@@ -1,8 +1,8 @@
 const router = require('express').Router();
+const bcrypt = require('bcryptjs');
 
 const Users = require('../users/users-helpers.js');
 
-const bcrypt = require('bcryptjs');
 
 router.post('/register', (req, res) => {
     let userInfo = req.body;
@@ -35,5 +35,6 @@ router.post('/login', (req, res) => {
             res.status(500).json(err)
         });
 });
+
 
 module.exports = router;
